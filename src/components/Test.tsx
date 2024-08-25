@@ -211,7 +211,7 @@ function Test({ setPageState }: { setPageState: Dispatch<SetStateAction<any>> })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const reqTest = async () => {
     const [tesReq] = await Promise.all([
-      axios.get('http://192.168.25.50:8000/api/v1/vocabulary/2/exam'),
+      axios.get('http://localhost:8080/api/v1/vocabulary/2/exam'),
     ]);
     console.log(tesReq.data.words);
     const newTestList = tesReq.data.words;
