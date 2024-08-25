@@ -7,7 +7,7 @@ function Test({ setPageState }: { setPageState: Dispatch<SetStateAction<any>> })
   const [ready, setReady] = useState(false);
   const [nowExam, setNowExam] = useState<WordUpdateProps>({} as WordUpdateProps);
   const [meanings, setMeanings] = useState([] as string[]);
-  const remainingCnt = useRef(0);
+  const [remainingCnt, setRemainingCnt] = useState(0);
   const maxCntRef = useRef(0);
   const fCntRef = useRef(0);
   const sCntRef = useRef(0);
@@ -18,7 +18,7 @@ function Test({ setPageState }: { setPageState: Dispatch<SetStateAction<any>> })
     const index = Math.floor(Math.random() * array.length);
     const currentList = [...array];
     const newExam = currentList.splice(index, 1)[0];
-    if (newExam.word === currentWord) {
+    if (newExam.word === currentWord || newExam.count > 2) {
       return getRandomElements(array);
     }
     setCurrentWord(newExam.word);
@@ -98,54 +98,38 @@ function Test({ setPageState }: { setPageState: Dispatch<SetStateAction<any>> })
       return;
     }
 
-    // 다했으면 이제 넘어가
-
-    // const sortedArray = recycleList.sort((a, b) => {
-    //   // count가 4 이상인지 먼저 확인
-    //   const aHighCount = a.count >= 3;
-    //   const bHighCount = b.count >= 3;
-
-    //   if (aHighCount !== bHighCount) {
-    //     // count가 4 이상인 항목을 후순위로
-    //     return aHighCount ? 1 : -1;
-    //   }
-
-    //   // count가 4 이상 또는 미만으로 동일한 경우, rank로 비교
-    //   if (a.rank !== b.rank) {
-    //     return a.rank - b.rank; // rank가 낮은 순서대로
-    //   }
-
-    //   // rank가 같으면 count로 비교
-    //   return a.count - b.count; // count가 낮은 순서대로
-    // });
     // // 만약 널이끝났다면 isPass가 false인놈들 중에서 출제하되, sort처리해서 rank가 낮고 count가 낮은애를
     const fList = recycleList.filter((item) => item.isPass === false);
     const sList = recycleList.filter((item) => item.isPass);
 
     // 부족하면 리메인을 올려서 ㄱㄱ
-    if (fList.length * 0.26 > fList.length) {
-      remainingCnt.current = maxCntRef.current / 2 - fList.length;
+    if (maxCntRef.current * 0.26 > fList.length) {
+      setRemainingCnt(maxCntRef.current / 2 - fList.length);
     }
-
+    console.log(fList.length * 0.26);
     console.log(remainingCnt, fList.length);
     // f가 부족할 경우 맞춘 문제에서 먼저 나오게 해야함
-    if (sList.length > 0 && remainingCnt.current > 0) {
+    if (sList.length > 0 && remainingCnt > 0) {
       sCntRef.current++;
-      --remainingCnt.current;
+      setRemainingCnt((prev) => prev - 1);
       const [exam] = getRandomElements(sList);
       setNowExam(exam);
       setMeanings(makeMeaningList(exam.meaning, recycleList));
       return;
     }
 
+    console.log('어디서2');
     if (fCntRef.current <= maxCntRef.current / 2 && fList.length > 0) {
       fCntRef.current++;
+      console.log('얘가 계속 나오겠지');
       const [exam] = getRandomElements(fList);
       setNowExam(exam);
       setMeanings(makeMeaningList(exam.meaning, recycleList));
       return;
     }
 
+    console.log('어디서1');
+    console.log('어디서3', sCntRef.current, fCntRef.current);
     if (fCntRef.current + sCntRef.current >= maxCntRef.current / 2) {
       const newList: WordUpdateProps[] = [];
       const f = fList
@@ -211,9 +195,11 @@ function Test({ setPageState }: { setPageState: Dispatch<SetStateAction<any>> })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const reqTest = async () => {
     const [tesReq] = await Promise.all([
-      axios.get('http://localhost:8080/api/v1/vocabulary/2/exam'),
+      axios.get('http://localhost:8080/api/v1/vocabulary/1/exam'),
     ]);
-    console.log(tesReq.data.words);
+    console.log('이게 데이터 그대로 : ', tesReq.data.words);
+    const set = new Set(tesReq.data.words);
+    console.log('이게 셋 : ', set);
     const newTestList = tesReq.data.words;
     const [newExam, updateList] = getRandomElements(newTestList);
     maxCntRef.current = updateList.length * 2;
